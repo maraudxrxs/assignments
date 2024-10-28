@@ -1,0 +1,152 @@
+---
+title: "ST3131assignment"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Cecilia Parman
+
+```{r - Question 2}
+data = read.table("chem.txt", header=T)
+n = nrow(data)
+p = ncol(data) - 1 
+ms = round(apply(data, 2, mean),2)
+cov_matrix = cov(data)
+print("The mean of y is")
+ms[1]
+print("The mean of x1 is")
+ms[2]
+print("The mean of x2 is")
+ms[3]
+print("The covariance matrix is")
+round(cov_matrix,2)
+
+```
+
+```{r - Question 3}
+ones_column <- rep(1, n)
+X <- cbind(ones_column, data$x1, data$x2)
+y <- data$y
+X_transpose_X <- t(X) %*% X
+X_transpose_X_inverse <- solve(X_transpose_X)
+X_transpose_y <- t(X) %*% y
+print("Question 3")
+
+##(i) LS estimate of beta
+beta_hat <- round(X_transpose_X_inverse %*% X_transpose_y,2)
+print("The estimates of beta are")
+beta_hat
+
+##(ii) Unbiased estimate of variance
+y_hat <- X %*% beta_hat
+residuals <- y - y_hat
+SSR <- sum(residuals^2)
+sigma2_hat <- round(SSR/(n-p-1),2)
+print("The unbiased estimator of sigma is")
+sigma2_hat
+
+##(iii) approximate SE for (i)
+hy = X %*% beta_hat
+e = y - hy
+s = sqrt(sum(e^2)/(n-p-1))
+SE_beta_hat <- round(sqrt(diag(s^2*X_transpose_X_inverse)),2)
+print("The approximate SE for (i)")
+SE_beta_hat
+
+##(iv) ratio of RMSE to SD(y)
+RMSE <- sqrt(mean(residuals^2))
+ratio <- round(RMSE/sd(y),2)
+print("The ratio of RMSE to SD(y)")
+ratio
+```
+
+```{r - Question 4}
+x3 <- data$x1^2
+x4 <- data$x2^2
+x5 <- data$x1*data$x2
+x1 <- data$x1
+x2 <- data$x2
+
+mreg = lm(y ~ x1 + x2 + x3 + x4 + x5)
+cov_matrix2 = round(vcov(mreg),2)
+print("Question 4")
+
+##(i) LS estimate of beta
+beta_hat2 = round(coef(mreg),2)
+residuals_2 = residuals(mreg)
+print("The LS estimate of beta_hat 2")
+beta_hat2
+
+n_2 <- length(residuals_2)
+p_2 <- length(beta_hat2)
+
+##(ii) Unbiased estimate of variance
+sigma2_unbiased_2 <- round(sum(residuals_2^2) / (n_2 - p_2),2)
+print("The unbiased estimate of variance")
+sigma2_unbiased_2
+
+##(iii) approximate SE for (i)
+SE_beta_hat <- round(sqrt(diag(cov_matrix2)),2)
+print("The approximate SE for (i) is")
+SE_beta_hat
+
+##(iv) ratio of RMSE to SD(y)
+RMSE_2 <- sqrt(mean(residuals_2^2))
+ratio_RMSE_SDy_2 <- round(RMSE_2 / sd(y),2)
+print("The ratio of RMSE to SD(y) is")
+print(ratio_RMSE_SDy_2)
+```
+
+```{r - Question 5}
+X <- cbind(1, x1, x2, x3, x4, x5)
+design_x_inv <- solve(t(X) %*% X) %*% t(X)
+beta_estimates <- matrix(0, nrow = 15000, ncol = length(beta_hat2))
+sigma2_estimates <- numeric(15000)
+
+for (i in 1:15000) {
+  # Generate data
+  epsilon <- rnorm(n, mean = 0, sd = sqrt(sigma2_unbiased_2))
+  Y_star <- X %*% beta_hat2 + epsilon
+  
+  beta_hat_star <- design_x_inv %*% Y_star
+  residuals_star <- (y - X %*% beta_hat_star)
+  
+  # Calculate unbiased estimate of sigma^2
+  n_star <- length(residuals_star)
+  p_star <- length(beta_hat_star)  # Number of coefficients including intercept
+  sigma2_hat_unbiased_star <- sum(residuals_star^2) / (n_star - p_star)
+  
+  # Store estimates
+  beta_estimates[i, ] <- beta_hat_star
+  sigma2_estimates[i] <- sigma2_hat_unbiased_star
+}
+
+# (i) Calculate mean and variance matrix of LS estimates of beta^*
+print("Question 5")
+mean_beta <- round(colMeans(beta_estimates),2)
+print("The mean of LS estimate of beta star is")
+mean_beta
+variance_matrix_beta <- round(cov(beta_estimates),2)
+print("The variance matrix of the LS estimate of beta star is")
+variance_matrix_beta
+
+# (ii) Calculate mean of unbiased estimates of sigma^(*2)
+mean_sigma_2 <- round(mean(sigma2_estimates),2)
+print("The mean of the unbiased estimates of sigma square star")
+mean_sigma_2
+
+```
+
+```{r - Question 6}
+print("Q6")
+print("The mean of the LS estimate of β is")
+beta_hat2
+paste("The variance matrix of the LS estimate of β is")
+cov_matrix2
+paste("The mean of the unbiased estimates of sigma_sq_star is")
+sigma2_unbiased_2
+```
+
